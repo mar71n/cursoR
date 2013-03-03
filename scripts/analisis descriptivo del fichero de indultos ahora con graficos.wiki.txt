@@ -1,0 +1,52 @@
+Cargo estos dos archivos de datos:
+
+    t_indultos <- read.csv("../data/indultos.csv")
+
+No hay pardon_year NA
+
+    table(t_indultos$pardon_year,useNA=c("ifany"))
+
+275 casos con inicio NA
+
+    table(t_indultos$crime_initial_year,useNA=c("ifany"))
+
+Hay 7 magistrados en los que todos los inicios son NA
+
+    table(t_indultos$crime_initial_year,t_indultos$signature,useNA=c("ifany"))
+    table(t_indultos[is.na(t_indultos$crime_initial_year),]$signature)
+    table(t_indultos$signature)
+
+son los 7 donde coinciden Tot\_inicio\_NA y Tot_indultos (es decir, todos los indultos tiene inicio NA)
+
+    cbind(Tot_inicio_NA=table(t_indultos[is.na(t_indultos$crime_initial_year),]$signature),
+          Tot_indultos=table(t_indultos$signature)
+    )
+
+Los excluyo, ya que de estos no puedo calcular la "espera"
+
+    t_indultos_a <- t_indultos[!is.na(t_indultos$crime_initial_year),]
+
+
+    t_indultos_a$espera <- t_indultos_a$pardon_year - t_indultos_a$crime_initial_year
+
+Frecuencia de las esperas
+
+    # voy a mostrar dos graficos
+    layout(matrix(c(1:2),2,1))
+    barplot(table(t_indultos_a$espera),main="Frecuencia de espera")
+
+
+    signature_promedio_espera <- aggregate(x= list(t_indultos_a$espera), by=list(t_indultos_a$signature), FUN = mean, na.rm=T)
+
+
+    names(signature_promedio_espera) <- c("juez", "Promedio de espera")
+
+
+    barplot(signature_promedio_espera$"Promedio de espera",main="Promedio de espera por signature")
+
+Si no entiendo mal, veo que el promedio general de espera  coincide bastante con los promedios por signature. No veo ninguna signature que resalte.
+Pero no es que lo miro y digo "no hay relación con el ministro!"
+Espero ver algo mas contundente. Tiro la primera piedra.
+
+
+
