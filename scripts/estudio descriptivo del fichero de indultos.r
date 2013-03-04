@@ -56,10 +56,13 @@ layout(matrix(c(1:2),2,1))
 barplot(table(t_indultos_a$espera),main="Frecuencia de espera")
 
 signature_promedio_espera <- aggregate(x= list(t_indultos_a$espera), by=list(t_indultos_a$signature), FUN = mean, na.rm=T)
-
 names(signature_promedio_espera) <- c("juez", "Promedio de espera")
 
 # layout(matrix(c(2,1),1,2))
 # layout(matrix(c(2,1),2,1))
 barplot(signature_promedio_espera$"Promedio de espera",main="Promedio de espera por signature")
 # boxplot(signature_promedio_espera$"Promedio de espera")
+
+layout(matrix(1:9,3,3))
+aggregate(x= list(t_indultos_a$espera), by=list(t_indultos_a$signature), FUN = boxplot, na.rm=T,ylim=c(0,20))
+
