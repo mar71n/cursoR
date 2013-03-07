@@ -66,3 +66,20 @@ barplot(signature_promedio_espera$"Promedio de espera",main="Promedio de espera 
 layout(matrix(1:9,3,3))
 aggregate(x= list(t_indultos_a$espera), by=list(t_indultos_a$signature), FUN = boxplot, na.rm=T,ylim=c(0,20))
 
+
+# Sin embargo,
+summary(lm(t_indultos_a$espera ~ t_indultos_a$signature))
+# nos acusa diferencia significativa.
+
+
+table(t_indultos_a$signature, t_indultos_a$espera)
+
+
+layout(1)
+aggregate(x= list(t_indultos_a$espera), by=list(t_indultos_a$signature), FUN = append, values=NULL)
+str(aggregate(x= list(t_indultos_a$espera), by=list(t_indultos_a$signature), FUN = append, values=NULL))
+boxplot(aggregate(x= list(t_indultos_a$espera), by=list(t_indultos_a$signature), FUN = append, values=NULL)[[2]], notch=T,ylim=c(0,15))
+# notch: Si es "TRUE", una cuña es dibujada a cada lado de las cajas.
+# Cuando las cuñas de dos grá???cos de caja no se traslapan, entonces las
+# medianas son signi???cativamente diferentes a un nivel del 5%.
+
