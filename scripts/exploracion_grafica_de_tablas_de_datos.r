@@ -1,3 +1,7 @@
+library(GGally)
+
+qplot(sample=ufc$dbh.cm, stat="qq",xlab = "Diameter ") + geom_line(x=ufc$dbh.cm,y=10)
+
 ufc <- read.csv("../data/ufc.csv")
 str(ufc)
 

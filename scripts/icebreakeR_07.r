@@ -61,9 +61,9 @@ sd(ufc$dbh.cm, na.rm = TRUE)
 # ?sd # desviacion standar
 range(ufc$dbh.cm, na.rm = TRUE)
 # [1] 10 112
-> IQR(ufc$dbh.cm, na.rm = TRUE)
+IQR(ufc$dbh.cm, na.rm = TRUE)
 # [1] 23.45
-?IQR
+?IQR # rango intercuantil
 summary(ufc$dbh.cm)[[5]]-summary(ufc$dbh.cm)[[2]]
 
 # Measures of skew
