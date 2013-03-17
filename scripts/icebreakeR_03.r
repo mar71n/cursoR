@@ -27,7 +27,7 @@
 # and height for a subsample1. In the dataset, some plots are empty. Those plots are 
 # agged by having
 # trees with missing diameters and blank species.
-> ufc <- read.csv("../data/ufc.csv")
+ufc <- read.csv("../data/ufc.csv")
 # Let's also input the sample design parameter and population size for later computation.
 > ufc_baf <- 7
 > ufc_area <- 300
@@ -82,6 +82,17 @@ tail(ufc) # los ultimos 6
 # $ dbh_cm : num NA 39 48 15 52 31 28 36 34 26 ...
 # We have created two more variables, which are now storred in our dataframe.
 
+# 3.3.1 Manipulation
+# Ah, some diameters are missing. Those correspond to empty plots. Also, many heights are missing; the
+# height attributes must have been subsampled. Next, obtain familiar units on our tree measurements (cm
+#                                                                                                    for dbh and m for height, respectively).
+# Note that we append the units to the variable names to be sure that the reader can easily interpret
+# the statistics that we will later compute.
+ufc$height_m <- ufc$height/10
+ufc$dbh_cm <- ufc$dbh/10
+
+
+
 # 3.3.2 Data Summaries
 
 # Now we obtain some useful snapshots of the data.
@@ -93,3 +104,64 @@ tail(ufc) # los ultimos 6
 
 > ufc$height_m[ufc$height_m < 0.1] <- NA
 > range(ufc$height_m, na.rm = TRUE)
+
+# 3.5 Functions
+# Functions exist to compute tree volume from diameter and height, by species (Wyko et al., 1982), for
+# this geographical area. They look complex, but are easy to use, and ecient. Here we keep the unit
+# conversions outside the function, but they could also be inside.
+vol_fvs_ni_bdft <- function(spp, dbh_in, ht_ft){
+ bf_params <-+ data.frame(
+ species = c("WP", "WL", "DF", "GF", "WH", "WC", "LP", "ES",
+ "SF", "PP", "HW"),
+ b0_small = c(26.729, 29.790, 25.332, 34.127, 37.314, 10.472,
+ 8.059, 11.851, 11.403, 50.340, 37.314),
+ b1_small = c(0.01189, 0.00997, 0.01003, 0.01293, 0.01203,
+ 0.00878, 0.01208, 0.01149, 0.01011, 0.01201, 0.01203),
+ b0_large = c(32.516, 85.150, 9.522, 10.603, 50.680, 4.064,
+ 14.111, 1.620, 124.425, 298.784, 50.680),
+ b1_large = c(0.01181, 0.00841, 0.01011, 0.01218, 0.01306,
+ 0.00799, 0.01103, 0.01158, 0.00694, 0.01595, 0.01306))
+ dimensions <- data.frame(dbh_in = dbh_in,
+ ht_ft = ht_ft,
+ species = as.character(spp),
+ this_order = 1:length(spp))
+ dimensions <- merge(y=dimensions, x=bf_params, all.y=TRUE, all.x=FALSE)
+ dimensions <- dimensions[order(dimensions$this_order, decreasing=FALSE),]
+ b0 <- with(dimensions, ifelse(dbh_in <= 20.5, b0_small, b0_large))
+ b1 <- with(dimensions, ifelse(dbh_in <= 20.5, b1_small, b1_large))
+ volumes_bdft <- b0 + b1 * dimensions$dbh_in^2 * dimensions$ht_ft
+ return(volumes_bdft)
+ }
+
+# Having saved the function we can use it in our code like any other function. One small complication is
+# that the function was written for imperial units, so we have to take care of the unit conversion.
+cm_to_inches <- 1/2.54
+m_to_feet <- 3.281
+bd_ft_to_m3 <- 0.002359737
+# Now we can use the function that we wrote. What do you think we achieve by using with, below?
+ufc$vol_m3 <- with(ufc, vol_fvs_ni_bdft(species,
+ dbh_cm * cm_to_inches,
+ p_height_m * m_to_feet) * bd_ft_to_m3)
+# The following are examples of the construction of new variables. The variables are related to the analysis
+# of forest inventory. Look away if such things disturb you. But, do execute them. If the execution is
+# successful then you will get no feedback.
+ufc$g_ma2 <- ufc$dbh_cm^2 * pi/40000
+ufc$tree_factor <- ufc_baf/ufc$g_ma2
+ufc$vol_m3_ha <- ufc$vol_m3 * ufc$tree_factor
+
+
+
+# 3.6 Plot Level Processing
+# Our next step is to aggregate the tree{level volume estimates to the plot level. First, we construct a
+# dataframe (called ufc_plot that has the (known) plot locations. A dataframe will be dened more
+# formally later, for the moment, treat it as a receptacle to keep variables in.
+ufc_plot <- as.data.frame(cbind(c(1:144), rep(c(12:1),12),
+  rep(c(1:12), rep(12,12))))
+names(ufc_plot) = c("plot","north.n","east.n")
+ufc_plot$north = (ufc_plot$north.n - 0.5) * 134.11
+ufc_plot$east = (ufc_plot$east.n - 0.5) * 167.64
+# Then we can construct plot-level values for any of the measured characteristics, for example, merchantable
+# volume per hectare, by adding up the volumes per hectare of the trees within each plot. We know how
+# to do this.
+length(ufc_plot)
+ufc_plot$vol_m3_ha <- tapply(ufc$vol_m3_ha, ufc$plot,sum, na.rm = TRUE)

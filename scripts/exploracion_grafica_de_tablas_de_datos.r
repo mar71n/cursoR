@@ -185,6 +185,169 @@ text(x1, x2-0.5, colors()[plot.us], cex=0.3)
 text(x1+0.4, x2-0.4, plot.us, cex=0.5)
 par(opar)
 
+# 8.5 Common Challenges
+# This section is devoted to showing how to solve common graphical challenges using R.
+# 8.5.1 Error Bars
+# Often we are asked to provide graphs that have error bars. We can use the arrows() function to provide
+# the bars, and vectorization will keep the code simple for us. Figure 8.4 shows the mean and a 95%
+# condence interval (unweighted!) for the tree diameters by species.
+ufc_ <- ufc[ufc$species!='',]
+ufc_$species <- factor(ufc_$species)
+means <- tapply(ufc_$dbh.cm, ufc_$species, mean, na.rm=F)
+ses <- tapply(ufc_$dbh.cm, ufc_$species, sd, na.rm=TRUE) /
+ sqrt(tapply(!is.na(ufc_$dbh.cm), ufc_$species, sum))
+ylim <- range(c(means + 1.96*ses, means - 1.96*ses))
+par(las=1, mar=c(4,4,2,2))
+plot(1:10, means, axes=FALSE, ylim=ylim, xlab="Species", ylab="Dbh (cm)")
+axis(1, at=1:10, labels=levels(ufc_$species))
+axis(2)
+arrows(1:10, means-1.96*ses, 1:10, means+1.96*ses,
+ col="darkgrey", angle=90, code=3, length=0.1)
+
+# 8.5.2 Colour graphics by groups
+# Integrating useful colour in another common challenge. There exist packages that contain functions to
+# do this quickly and easily (lattice, see Section 8.6.1, and car, to name just two) but it is worth seeing
+# how to do this with the tools available.
+# Using all the available species will make quite a mess, so let's constrain ourselves to trees from the
+# four most common. The following code identies the four most common species and constructs a smaller
+# dataframe that contains trees only of those species.
+top.four <- levels(ufc$species)[order(table(ufc$species),
+ decreasing=TRUE)][1:4]
+ufc.small <- ufc[ufc$species %in% top.four,]
+ufc.small$species <- factor(ufc.small$species)
+# Now we can construct the plot using that smaller dataframe as follows (see Figure 8.5).
+my.colours <- c("red","blue","goldenrod","darkseagreen4")
+par(las=1, mar=c(4,4,3,2))
+plot(ufc.small$dbh.cm, ufc.small$height.m,
+ xlab = "Dbh (cm)", ylab = "Height (m)",
+ col = my.colours[ufc.small$species])
+legend("bottomright",
+ legend = levels(ufc.small$species),
+ col = my.colours,
+ lty = rep(NULL, 4),
+ pch = rep(19, 4),
+ bty = "n")
+
+# 8.6 Contributions
+# Contributers to R have written packages that ease the construction of graphics. We will explore some of
+# them here. Documentation of these facilities is challenging because the code is under continuous review
+# and development.
+# 8.6.1 Trellis
+# Trellis is a more formal tool for graphical virtuosity. Trellis allows great 
+# exibility for producing con-ditioning plots. The R implementation of trellis is called lattice, and is written mainly by Deepayan
+# Sankar.
+# We load the lattice package by means of the library function, which is explained in greater detail
+# in Appendix A.
+library(lattice)
+# The goal of lattice is to simplify the production of high-quality and simple graphics that permit
+# multi-dimensional data summaries.
+# We have already seen the use of these graphics in the Showcase chapter (Chapter 3), where we plotted
+# height against diameter for each species, as well as diameter distributions for each species. We can get
+# other useful graphics with a minimum of fuss, for example, focusing on the four most prolic species in
+# the ufc data (Figure 8.6).
+ufc <- read.csv("../data/ufc.csv") # ufc is a dataframe
+ufc$dbh.cm <- ufc$dbh/10 # Dbh now in cm
+ufc$height.m <- ufc$height/10 # Height now in metres
+ufc$height.m[ufc$height.m < 0.1] <- NA
+ufc <- ufc[complete.cases(ufc),]
+ufc$species[ufc$species %in% c("F","FG")] <- "GF"
+ufc$species <- factor(ufc$species)
+top.four <- levels(ufc$species)[order(table(ufc$species),
+ decreasing=TRUE)][1:4]
+# The panels in the following list refer directly to Figure 8.6 and do not necessarily correspond in
+# position to what you will see on your screen.
+#  Top left panel:
+densityplot(~ dbh.cm | species, data=ufc,
+ subset=species %in% top.four)
+#  Top right panel:
+bwplot(dbh.cm ~ species, data=ufc, subset=species %in% top.four)
+#  Bottom left panel:
+histogram( ~ dbh.cm | species, data=ufc,
+ subset=species %in% top.four)
+#  Bottom right panel:
+#   (The object that we are loading was created in the Showcase chapter.)
+#load("../images/ufc_plot.RData")
+load("../images/indultos_x_annio.png")
+contourplot(vol_m3_ha ~ east * north,
+ main = expression(paste("Volume (", m^3, "/ha)", sep="")),
+ xlab = "East (m)", ylab="North (m)",
+ region = TRUE,
+ col.regions = terrain.colors(11)[11:1],
+ data=ufc_plot)
+# Graphics produced by lattice are highly customizable. For example, if we were to wish to plot
+# the height against the predicted height for the six species with the largest number of trees, using the
+# mixed-eects imputation model from Chapter 3, and add some illustrative lines to the graphs, then we
+# could do it with the following code. First we t a suitable model and extract the predictions, to be used
+# as imputations.  
+#   
+
+
+
+library(nlme)
+hd.lme <- lme(I(log(height.m)) ~ I(log(dbh.cm)) * species,
+                 random = ~ I(log(dbh.cm)) | plot,
+                  data = ufc)
+ufc$p.height.m <- exp(predict(hd.lme, level=1))
+top.six <- levels(ufc$species)[order(table(ufc$species),
+                                        decreasing=TRUE)][1:6]
+library(MASS)
+
+
+
+hd.lm <- lm(I(log(height.m)) ~ I(log(dbh.cm)) * species,
+ data = ufc)
+ufc$p.height.m <- exp(predict(hd.lm))
+# We can change the order of the panels using the index.cond option. We can also add other commands
+# to each panel. ?xyplot is very helpful to us here, providing very detailed information about the various
+# options, and some attractive examples that we can adapt to our own uses.
+# Even though the code is quite mature, it is still under development to ease usage. For example, in
+# up-to-date versions of lattice, to obtain a trellis plot that has points, regression lines of best t, and
+# smoothers superimposed, we need merely the following code:
+xyplot(height.m ~ p.height.m | species, data = ufc,
+            xlab = "Predicted Height (m)",
+            ylab = "Measured Height (m)",
+            type = c("p", "r", "smooth"),
+            subset = species %in% top.six
+            )
+# Figure 8.7: A lattice plot of height against predicted height by species for the six species that have the
+# most trees. The blue dashed line is 1:1, the red solid line is the panel-level regression, the purple solid
+# line is a robust regression t and the black curved line is a loess smooth.
+
+
+
+
+# 8.6.2 Grammar of Graphics
+# The key reference is now in its second edition (Wilkinson, 2005). Hadley Wickham has developed tools
+# within R to realize some of the Grammar principles in an easily-usable format. The code is in version
+# 2, and the original version is being phased out (\deprecated") hence we use the ggplot2 package. This
+# package is still under heavy development, but it also looks like a promising contribution to simplify
+# statistical communication.
+library(ggplot2)
+# The dierences between lattice and ggplot2 are mostly cosmetic. Publcation-quality graphics can be
+# easily constructed using each of them, with patience. I nd that ggplot2's ability to seamlessly add data
+# from a range of sources greatly eases the challenge of juxtaposing model predictions and observations,
+# but as we saw in the previous section, lattice has a somewhat more straightforward interface.
+# Getting Started
+# We trace some very simple developments in Figure 8.8.
+# 1. Start by creating the plot space, and add points. Below, we identify the object to use, then pick
+# out the so-called aesthetic elements of the object, and then tell R how to display them.
+ggplot(ufc, aes(y = height.m, x = dbh.cm)) + geom_point()
+# 2. Now we add a smooth line and (automatically) standard error spaces. The standard error polygon
+# is attractive but its value is questionable, because it is point-wise, not curve-wise. So, it looks as
+# though it tells us something really useful, but sadly, it does not.
+ggplot(ufc, aes(y = height.m, x = dbh.cm)) + geom_point() +
+ stat_smooth(fill = "blue", alpha = 0.2,
+ colour = "darkblue", size = 2)
+
+
+
+
+
+
+
+
+
+
 
 
 
