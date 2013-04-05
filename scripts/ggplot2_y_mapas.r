@@ -35,10 +35,10 @@ map.unizar <- get_map( location = as.numeric(unizar),
                        scale = 2,
                        zoom = 9)
 
-municipios <- c('Ciudad Aut. de Bs.As.', 'ALTE. BROWN', 'AVELLANEDA', 'BERAZATEGUI', 'BERISSO', 'ENSENADA', 'EST. ECHEVERRIA',
+municipios <- c('Ciudad Aut. de Bs.As.', 'ALTE. BROWN', 'AVELLANEDA', 'BERAZATEGUI', 'BERISSO', 'ensenada (la plata)', 'estevan echeverria',
                 'EZEIZA  ', 'FCIO. VARELA', 'GRAL. SAN MARTIN', 'HURLINGHAM ', 'ITUZAINGO', 'JOSE C. PAZ ', 'LA MATANZA',
-                'LA PLATA', 'LANUS', 'LOMAS DE ZAMORA', 'MALVINAS ARG.', 'MERLO', 'MORENO', 'MORON', 'QUILMES',
-                'SAN FERNANDO', 'SAN ISIDRO', 'SAN MIGUEL', 'TIGRE', 'TRES DE FEBRERO', 'VICENTE LOPEZ')
+                'LA PLATA', 'LANUS', 'LOMAS DE ZAMORA', 'MALVINAS ARGENTINAS', 'MERLO', 'MORENO', 'MORON', 'QUILMES',
+                'san fernando - tigre', 'SAN ISIDRO', 'SAN MIGUEL', 'TIGRE', 'TRES DE FEBRERO', 'VICENTE LOPEZ')
 
 # 2010 http://ceamse.gov.ar
 basura <- c(2277772.3, 155333.7, 114414.3, 66295.2, 24246.3, 24966.1, 62664.5, 25501.3, 70500.0,
@@ -63,3 +63,18 @@ ggmap(map.unizar) + geom_point(aes(x = lon, y = lat),
 ggmap(map.unizar) + geom_point(aes(x = lon, y = lat),
                                data = basura_x_muni, colour = 'blue', 
                                size = basura_x_muni$poblacion/100000 )
+
+saveRDS(map.unizar,file = "mapa_bs_as", ascii = FALSE, version = NULL,compress = TRUE, refhook = NULL)
+mapabsas <- readRDS(file = "mapa_bs_as")
+saveRDS(basura_x_muni,file = "basura_x_muni", ascii = FALSE, version = NULL,compress = TRUE, refhook = NULL)
+df_basura <- readRDS(file = "basura_x_muni")
+
+ggmap(mapabsas) + geom_point(aes(x = lon, y = lat),
+                               data = df_basura, colour = 'blue', 
+                               size = df_basura$poblacion/100000 )
+ggmap(mapabsas) + geom_point(aes(x = lon, y = lat), 
+                               data = df_basura, colour = 'red', 
+                               size = df_basura$basura/100000 )
+
+geocode("san fernando - tigre")
+geocode("tigre")
