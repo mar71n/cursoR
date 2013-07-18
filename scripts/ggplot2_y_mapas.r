@@ -76,5 +76,15 @@ ggmap(mapabsas) + geom_point(aes(x = lon, y = lat),
                                data = df_basura, colour = 'red', 
                                size = df_basura$basura/100000 )
 
+calles <- data.frame(c(-58.378208,-58.442919), c( -34.60008, -34.576043))
+names(calles) <- c("lon","lat")
+
+ggmap(mapabsas) + geom_point(aes(x = lon, y = lat), 
+                              data=calles,colour = 'red', 
+                             size = 1 )
+
+
 geocode("san fernando - tigre")
 geocode("tigre")
+
+str(mapabsas)
